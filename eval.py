@@ -3,6 +3,7 @@
 import faiss
 import time
 import numpy as np
+import os
 
 def get_index(index_type,
               train_data,
@@ -61,13 +62,13 @@ def get_index(index_type,
     elif mode == 'ivfpq':
         # Using IVF-PQ index
         code_sz = 64 # power of 2
-        n_centroids = 256#
+        n_centroids = 256
         nbits = 8  # nbits must be 8, 12 or 16, The dimension d should be a multiple of M.
         index = faiss.IndexIVFPQ(index, d, n_centroids, code_sz, nbits)
     elif mode == 'ivfpq-rr':
         # Using IVF-PQ index + Re-rank
         code_sz = 64
-        n_centroids = 256# 10:1.92ms, 30:1.29ms, 100: 0.625ms
+        n_centroids = 256 # 10:1.92ms, 30:1.29ms, 100: 0.625ms
         nbits = 8  # nbits must be 8, 12 or 16, The dimension d should be a multiple of M.
         M_refine = 4
         nbits_refine = 4
@@ -138,8 +139,8 @@ def load_memmap_data(source_dir,
     -------
     (data, data_shape)
     """
-    path_shape = source_dir + fname + '_shape.npy'
-    path_data = source_dir + fname + '.mm'
+    path_shape = os.path.join(source_dir, fname + '_shape.npy')
+    path_data = os.path.join(source_dir, fname + '.mm')
     data_shape = np.load(path_shape)
     if shape_only:
         return data_shape
@@ -294,15 +295,16 @@ def eval_faiss(emb_dir,
     top10_exact_rate = 100. * np.mean(top10_exact, axis=0)
     # top1_song = 100 * np.mean(top1_song[:ti + 1, :], axis=0)
 
-    hit_rates = np.concatenate(top1_exact_rate, top1_near_rate, top3_exact_rate, top10_exact_rate)
-
+    hit_rates = np.stack([top1_exact_rate, top1_near_rate, top3_exact_rate, top10_exact_rate])
     del fake_recon_index, query, db
+
+    # print(hit_rates)
+    np.save(f'{emb_dir}/hit_rates.npy', hit_rates)
+
     np.save(f'{emb_dir}/raw_score.npy',
             np.concatenate(
                 (top1_exact, top1_near, top3_exact, top10_exact), axis=1))
     np.save(f'{emb_dir}/test_ids.npy', test_ids)
-    print(f'Saved test_ids and raw score to {emb_dir}.')
-
+    print(f'Saved test_ids, hit-rates and raw score to {emb_dir}.')
 
     return hit_rates
-

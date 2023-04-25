@@ -6,14 +6,14 @@ import json
 import glob
 
 def load_index(data_dir, ext=['wav','mp3']):
-    dataset = {}
+    dataset = []
 
     print(f"=>Loading indices from {data_dir}")
     json_path = os.path.join(data_dir, data_dir.split('/')[-1] + ".json")
 
     for idx,fpath in enumerate(glob.iglob(os.path.join(data_dir,'**/*.*'), recursive=True)):
         if fpath.split('.')[-1] in ext: 
-            dataset[str(idx)] = fpath
+            dataset.append(fpath)
         
     with open(json_path, 'w') as fp:
         json.dump(dataset, fp)
